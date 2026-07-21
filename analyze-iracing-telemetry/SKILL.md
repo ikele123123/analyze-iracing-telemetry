@@ -66,6 +66,7 @@ Preserve these conventions unless the user explicitly asks otherwise:
 - Place T labels away from the track with leader lines.
 - Keep one per-corner interactive analysis instead of duplicating a full-lap telemetry panel.
 - Label the six left-side telemetry layers: speed, brake, throttle, steering, gear, and ABS.
+- Synchronize hover by distance across all six telemetry layers. Show one separate tooltip inside each layer rather than combining every metric into one box.
 - Include per-turn racing line, entry/minimum/average speed, braking point/peak/duration, ABS events/duration/assessment, throttle commitment, gear, steering, G-force, time loss, and coaching.
 - Generate a standalone offline HTML file with Plotly embedded once.
 - State that reference fuel, setup, tires, and weather may be unknown.
@@ -86,6 +87,7 @@ Browser validation must confirm:
 - no JavaScript page errors;
 - player/expert traces use only the two contracted styles;
 - every T button updates the title, local map, telemetry, metrics, ABS, and advice;
+- hovering any telemetry layer shows six separate tooltips at one shared distance, with no duplicate tooltip layers after switching turns;
 - graph pixels are nonblank and metric rows are not covered by Plotly containers.
 
 Do not keep screenshots, test reports, or `__pycache__` in the user's work directory after validation.

@@ -586,7 +586,14 @@ def make_report() -> None:
     .detail-title span { color:var(--muted); }
     .detail-grid { display:grid; grid-template-columns:minmax(320px,.8fr) minmax(440px,1.2fr); gap:0; }
     .detail-grid > div { min-width:0; padding:8px 14px 12px; }
-    #cornerMap { height:440px; } #cornerTelemetry { height:680px; }
+    #cornerMap { height:440px; } #cornerTelemetry { height:680px; position:relative; }
+    #cornerTelemetry .hoverlayer .hovertext { display:none !important; }
+    .synced-tooltip-layer { position:absolute; inset:0; z-index:20; pointer-events:none; }
+    .synced-tooltip { position:absolute; padding:6px 8px; background:rgba(255,255,255,.96); border:1px solid #aeb8b1; border-radius:4px; box-shadow:0 2px 7px rgba(23,32,28,.14); font-size:10px; line-height:1.35; }
+    .synced-tooltip strong { display:block; margin-bottom:2px; color:var(--ink); }
+    .synced-tooltip span { display:block; white-space:nowrap; }
+    .synced-tooltip .user-value { color:var(--user); }
+    .synced-tooltip .ref-value { color:var(--ref); }
     .metric-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
     .metric { padding:13px 15px; border-right:1px solid var(--line); min-width:0; }
     .metric:nth-child(4n) { border-right:0; }
@@ -649,6 +656,41 @@ def make_report() -> None:
 const turns={data_json}; const U='{USER_COLOR}', R='{REF_COLOR}', INK='{INK}', GRID='{GRID_COLOR}';
 const cfg={{responsive:true,displaylogo:false,scrollZoom:true,locale:'zh-CN'}};
 function line(x,y,name,color,dash='solid',shape='linear',showlegend=false){{return {{x,y,type:'scattergl',mode:'lines',name,showlegend,line:{{color,width:2,dash,shape}},hovertemplate:name+'<br>%{{x:.0f}} m · %{{y:.1f}}<extra></extra>'}};}}
+function setupSyncedTooltips(plot,data){{
+ const specs=[
+  {{title:'速度',user:'userSpeed',ref:'refSpeed',unit:'km/h',digits:1,axis:'yaxis'}},
+  {{title:'刹车',user:'userBrake',ref:'refBrake',unit:'%',digits:1,axis:'yaxis2'}},
+  {{title:'油门',user:'userThrottle',ref:'refThrottle',unit:'%',digits:1,axis:'yaxis3'}},
+  {{title:'方向盘',user:'userSteer',ref:'refSteer',unit:'°',digits:1,axis:'yaxis4'}},
+  {{title:'档位',user:'userGear',ref:'refGear',unit:'挡',digits:0,axis:'yaxis5'}},
+  {{title:'ABS',user:'userABS',ref:'refABS',unit:'',digits:0,axis:'yaxis6',binary:true}},
+ ];
+ plot.removeAllListeners('plotly_hover');
+ plot.removeAllListeners('plotly_unhover');
+ plot.querySelector('.synced-tooltip-layer')?.remove();
+ const layer=document.createElement('div'); layer.className='synced-tooltip-layer'; layer.hidden=true;
+ const boxes=specs.map(spec=>{{const box=document.createElement('div');box.className='synced-tooltip';layer.appendChild(box);return box;}});
+ plot.appendChild(layer);
+ const format=(value,spec)=>spec.binary?(value>=50?'触发':'未触发'):`${{Number(value).toFixed(spec.digits)}} ${{spec.unit}}`;
+ const hide=()=>{{layer.hidden=true;}};
+ plot.on('plotly_hover',event=>{{
+  if(!event.points.length)return;
+  const pointNumber=event.points[0].pointNumber;
+  const distance=data.distance[pointNumber];
+  const layout=plot._fullLayout,size=layout._size,boxWidth=innerWidth<560?145:185;
+  const xPixel=size.l+layout.xaxis.l2p(distance);
+  const left=Math.max(4,Math.min(plot.clientWidth-boxWidth-4,xPixel+boxWidth+18>plot.clientWidth?xPixel-boxWidth-12:xPixel+12));
+  specs.forEach((spec,index)=>{{
+   const domain=layout[spec.axis].domain;
+   const top=size.t+(1-domain[1])*size.h+3;
+   const box=boxes[index]; box.style.left=`${{left}}px`; box.style.top=`${{top}}px`; box.style.width=`${{boxWidth}}px`;
+   box.innerHTML=`<strong>${{spec.title}} · ${{Number(distance).toFixed(0)}} m</strong><span class="user-value">玩家 ${{format(data[spec.user][pointNumber],spec)}}</span><span class="ref-value">高手 ${{format(data[spec.ref][pointNumber],spec)}}</span>`;
+  }});
+  layer.hidden=false;
+ }});
+ plot.on('plotly_unhover',hide);
+ plot.onmouseleave=hide;
+}}
 function showTurn(n){{
  const d=turns[n-1]; document.querySelectorAll('.turn-button').forEach(b=>b.classList.toggle('active',+b.dataset.turn===n));
  const compact=innerWidth<560, mapHeight=compact?330:430, telHeight=compact?620:670;
@@ -658,7 +700,7 @@ function showTurn(n){{
  const traces=[line(d.distance,d.userSpeed,'玩家 · 速度',U,'solid','linear',true),line(d.distance,d.refSpeed,'高手 · 速度',R,'dash','linear',true),line(d.distance,d.userBrake,'玩家 · 刹车',U),line(d.distance,d.refBrake,'高手 · 刹车',R,'dash'),line(d.distance,d.userThrottle,'玩家 · 油门',U),line(d.distance,d.refThrottle,'高手 · 油门',R,'dash'),line(d.distance,d.userSteer,'玩家 · 方向盘',U),line(d.distance,d.refSteer,'高手 · 方向盘',R,'dash'),line(d.distance,d.userGear,'玩家 · 档位',U,'solid','hv'),line(d.distance,d.refGear,'高手 · 档位',R,'dash','hv'),line(d.distance,d.userABS,'玩家 · ABS',U,'solid','hv'),line(d.distance,d.refABS,'高手 · ABS',R,'dash','hv')];
  traces.forEach((t,i)=>{{const axis=Math.floor(i/2)+1;t.xaxis=axis===1?'x':'x'+axis;t.yaxis=axis===1?'y':'y'+axis}});
  const axisLabels=[['速度','km/h',.92],['刹车','%',.74],['油门','%',.57],['方向盘','度',.40],['档位','',.24],['ABS','状态',.07]].map(([title,unit,y])=>({{xref:'paper',yref:'paper',x:-.025,y,showarrow:false,xanchor:'right',align:'right',text:`<b>${{title}}</b>${{unit?'<br>'+unit:''}}`,font:{{size:10,color:INK}}}}));
- Plotly.react('cornerTelemetry',traces,{{height:telHeight,margin:{{l:compact?72:78,r:15,t:28,b:42}},annotations:axisLabels,paper_bgcolor:'#fff',plot_bgcolor:'#fff',font:{{family:'Segoe UI, Microsoft YaHei',color:INK,size:11}},legend:{{orientation:'h',y:1.05}},grid:{{rows:6,columns:1,pattern:'independent',roworder:'top to bottom'}},hovermode:'x unified',xaxis:{{showticklabels:false,gridcolor:GRID}},xaxis2:{{showticklabels:false,gridcolor:GRID}},xaxis3:{{showticklabels:false,gridcolor:GRID}},xaxis4:{{showticklabels:false,gridcolor:GRID}},xaxis5:{{showticklabels:false,gridcolor:GRID}},xaxis6:{{title:'距起终点距离 (m)',gridcolor:GRID}},yaxis:{{domain:[.84,1]}},yaxis2:{{domain:[.67,.81],range:[0,102]}},yaxis3:{{domain:[.50,.64],range:[0,102]}},yaxis4:{{domain:[.33,.47]}},yaxis5:{{domain:[.18,.30],dtick:1}},yaxis6:{{domain:[0,.14],range:[-5,105],tickvals:[0,100],ticktext:['关','触发']}}}},cfg);
+ Plotly.react('cornerTelemetry',traces,{{height:telHeight,margin:{{l:compact?72:78,r:15,t:28,b:42}},annotations:axisLabels,paper_bgcolor:'#fff',plot_bgcolor:'#fff',font:{{family:'Segoe UI, Microsoft YaHei',color:INK,size:11}},legend:{{orientation:'h',y:1.05}},grid:{{rows:6,columns:1,pattern:'independent',roworder:'top to bottom'}},hovermode:'x',hoversubplots:'axis',hoverdistance:40,spikedistance:-1,xaxis:{{showticklabels:false,gridcolor:GRID,showspikes:true,spikemode:'across',spikesnap:'cursor'}},xaxis2:{{showticklabels:false,gridcolor:GRID,matches:'x',showspikes:true,spikemode:'across',spikesnap:'cursor'}},xaxis3:{{showticklabels:false,gridcolor:GRID,matches:'x',showspikes:true,spikemode:'across',spikesnap:'cursor'}},xaxis4:{{showticklabels:false,gridcolor:GRID,matches:'x',showspikes:true,spikemode:'across',spikesnap:'cursor'}},xaxis5:{{showticklabels:false,gridcolor:GRID,matches:'x',showspikes:true,spikemode:'across',spikesnap:'cursor'}},xaxis6:{{title:'距起终点距离 (m)',gridcolor:GRID,matches:'x',showspikes:true,spikemode:'across',spikesnap:'cursor'}},yaxis:{{domain:[.84,1]}},yaxis2:{{domain:[.67,.81],range:[0,102]}},yaxis3:{{domain:[.50,.64],range:[0,102]}},yaxis4:{{domain:[.33,.47]}},yaxis5:{{domain:[.18,.30],dtick:1}},yaxis6:{{domain:[0,.14],range:[-5,105],tickvals:[0,100],ticktext:['关','触发']}}}},cfg).then(plot=>setupSyncedTooltips(plot,d));
  Object.entries(d.metrics).forEach(([k,v])=>document.getElementById('m-'+k).textContent=v);
  document.getElementById('cornerAdvice').innerHTML=d.recommendations.map(x=>`<li>${{x}}</li>`).join('');
 }}
