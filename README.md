@@ -1,5 +1,13 @@
 # iRacing 遥测分析 Skill
 
+<p align="center">
+  <a href="https://www.iracing.com/">
+    <img src="./assets/iracing-banner.jpg" alt="iRacing 赛车模拟器 Banner" width="100%">
+  </a>
+</p>
+
+<p align="center"><sub>非官方社区项目。iRacing 名称、标志及 Banner 图片归 iRacing.com Motorsport Simulations, LLC 所有。</sub></p>
+
 这是一个符合开放 [Agent Skills](https://agentskills.io/) 目录规范的遥测分析技能，可供 Codex、Claude Code 以及其他能够读取 `SKILL.md` 的 Agent 使用。
 
 它会将玩家的 iRacing `.ibt` 遥测与高手参考 `.csv` 对齐，生成一份可离线打开、支持逐弯切换的交互式 HTML 分析报告。

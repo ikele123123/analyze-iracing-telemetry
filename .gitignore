@@ -6,6 +6,7 @@ __pycache__/
 *.png
 *.jpg
 *.jpeg
+!assets/iracing-banner.jpg
 .env
 .venv/
 venv/
