@@ -1,0 +1,4 @@
+interface:
+  display_name: "iRacing Telemetry Analyzer"
+  short_description: "对比 IBT 与参考圈并生成逐弯交互式 HTML 报告"
+  default_prompt: "使用 $analyze-iracing-telemetry 对比我的 IBT 与高手参考圈，并生成逐弯交互式 HTML 报告。"
