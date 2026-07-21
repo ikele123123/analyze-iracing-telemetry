@@ -5,7 +5,7 @@ description: Analyze and compare iRacing telemetry from a player IBT file and an
 
 # Analyze iRacing Telemetry
 
-Generate a reproducible, interactive Chinese HTML debrief from one player IBT and one expert CSV. Use the bundled analyzer instead of rewriting telemetry parsing or report code.
+Generate a reproducible, interactive Chinese HTML debrief from one player IBT and one expert CSV. Follow the open Agent Skills directory conventions and use the bundled analyzer instead of rewriting telemetry parsing or report code.
 
 ## Workflow
 
@@ -76,8 +76,9 @@ Run syntax and skill checks:
 
 ```powershell
 python -m py_compile scripts/analyze_telemetry.py
-python <skill-creator>/scripts/quick_validate.py <this-skill-directory>
 ```
+
+When the open Agent Skills `skills-ref` validator is available, also run `skills-ref validate <this-skill-directory>`. Product-specific metadata under `agents/` is optional and must not be required by the analysis workflow.
 
 Browser validation must confirm:
 
